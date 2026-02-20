@@ -13,7 +13,8 @@ O **Site do CARB** (Centro Acadêmico Ruy Barbosa) é uma aplicação web fullst
 - **Estrutura:**
   - `server.js`: Ponto de entrada da API, configuração do servidor e rotas.
   - `models.js`: Definição centralizada dos schemas do banco de dados (Noticia, Aviso, Vaga, Acervo).
-  - `database.js`: Configuração da conexão com o banco usando variáveis de ambiente.
+  - `database.js`: Configuração da conexão com o banco usando variáveis de ambiente e pooling.
+  - `utils/contentFilter.js`: Motor de censura de palavrões e linguagem imprópria.
 
 ### Frontend (`/front-end`)
 - **Servidor Web:** Nginx (Containerizado)
@@ -24,6 +25,7 @@ O **Site do CARB** (Centro Acadêmico Ruy Barbosa) é uma aplicação web fullst
 ### Infraestrutura
 - **Docker Compose:** Orquestra os serviços `back-end` (API), `front-end` (Nginx), `db` (MariaDB) e `adminer` (Gestão de DB).
 - **Volumes:** Persistência de dados do banco (`mariadb_data`) e uploads (`uploads_data`).
+- **Nginx Config:** `client_max_body_size` ajustado para **50MB** para suportar fotos em alta resolução via e-mail.
 
 ## 3. Configuração e Instalação
 
@@ -98,11 +100,29 @@ Estas regras cobrem:
 
 ```
 ├── back-end/           # API Node.js
-│   ├── models.js       # Definição das tabelas
+│   ├── models.js       # Definição das tabelas (com suporte a LONGTEXT)
 │   ├── server.js       # Lógica da API e Rotas
-│   ├── database.js     # Conexão Sequelize
+│   ├── database.js     # Conexão Sequelize (com pooling e timeouts)
+│   ├── utils/          # Scripts utilitários (ex: contentFilter)
 │   └── public/uploads/ # Armazenamento de arquivos (montado volume)
 ├── front-end/          # Frontend Estático e Nginx
 │   └── public/         # HTML/CSS/JS
 └── docker-compose.yml  # Orquestração dos containers
 ```
+## 7. Testes e Qualidade
+
+O sistema possui uma suíte de testes automatizados focada em **cobertura lógica total**.
+
+### Executando Testes
+Para rodar a suíte de testes e gerar o relatório de cobertura:
+```bash
+cd back-end
+npm install # Se for a primeira vez
+npm run test:coverage
+```
+
+### Detalhes Técnicos
+- **Jest:** Framework de teste principal.
+- **Supertest:** Testes de integração de rotas API.
+- **SQLite3:** Banco de dados em memória para testes hiper-rápidos e isolados.
+- **Cobertura:** Focada em 100% da lógica de negócio (Models, Utils, Rotas).

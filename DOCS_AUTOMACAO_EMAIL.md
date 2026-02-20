@@ -6,43 +6,35 @@ Este documento contém o **Script de Automação** e o **Modelo de E-mail** para
 
 ## 1. Modelo de E-mail
 
-Para postar uma notícia, envie um e-mail para você mesmo (ou qualquer conta monitorada) com este formato:
+Para postar uma notícia, envie um e-mail para você mesmo com este formato:
 
-*   **Assunto:** Título da Notícia (Ex: `Resultado da Eleição 2026`)
-*   **Corpo:** O texto da notícia. Pode conter negrito, itálico e listas.
-*   **Anexo:** (Opcional) Uma imagem JPG/PNG para ser a capa.
-*   **Ação Final:** Aplique a etiqueta **`SaveToSite`** no e-mail no Gmail.
+*   **Assunto:** Título da Notícia
+*   **Corpo:** Conteúdo da notícia (Texto/HTML)
+*   **Anexo:** (Opcional) Uma imagem para ser a capa.
+*   **Ação Final:** Aplique a etiqueta **`SaveToSite`** no e-mail.
 
 ---
 
-## 2. Código do Google Apps Script (Backup)
+## 2. Código do Google Apps Script (Versão Limpa)
 
-Cole este código em [script.google.com](https://script.google.com).
+Cole este código em [script.google.com](https://script.google.com). **Dica:** Apague tudo o que estiver lá antes de colar.
 
 ```javascript
-/**
- * Envia e-mails com a etiqueta "SaveToSite" DIRETAMENTE para o Site do CARB.
- * SEGURANÇA 1: Protegido por API Key no Header.
- * SEGURANÇA 2: Filtro de Remetentes Autorizados (Whitelist).
- */
 function processEmailToSiteOnly() {
   const LABEL_NAME = "SaveToSite";
   
-  // --- CONFIGURAÇÕES DE ACESSO ---
-  // *** MANTENHA SEU LINK DO NGROK AQUI ***
+  // --- CONFIGURACOES DE ACESSO ---
   const API_URL = "https://nonanaemic-polygamously-jerrie.ngrok-free.dev/api/upload"; 
   const API_KEY = "CARB_SECURE_KEY_2026_X9Z"; 
 
-  // --- 🛡️ LISTA DE E-MAILS AUTORIZADOS ---
-  // Adicione aqui apenas os e-mails que podem publicar no site
+  // --- LISTA DE E-MAILS AUTORIZADOS ---
   const ALLOWED_SENDERS = [
-    "carbsiteoficial@gmail.com" // ✅ SOMENTE ELE PODE PUBLICAR
+    "carbsiteoficial@gmail.com"
   ];
 
-  // 1. Localiza a etiqueta
   let label = GmailApp.getUserLabelByName(LABEL_NAME);
   if (!label) {
-    console.log("Etiqueta '" + LABEL_NAME + "' não encontrada.");
+    console.log("Etiqueta '" + LABEL_NAME + "' nao encontrada.");
     return;
   }
   
@@ -52,32 +44,31 @@ function processEmailToSiteOnly() {
     return;
   }
 
-  // 2. Processa cada conversa
   for (let i = 0; i < threads.length; i++) {
     let messages = threads[i].getMessages();
     let message = messages[messages.length - 1]; 
     
-    // --- 🛡️ VALIDAÇÃO DE SEGURANÇA DO REMETENTE ---
+    // VALIDACAO DO REMETENTE
     let sender = message.getFrom();
-    // Extrai apenas o e-mail (remove o nome se houver: "Nome <email@abc.com>")
     let senderEmail = "";
-    if (sender.includes("<")) {
+    if (sender.indexOf("<") !== -1) {
         senderEmail = sender.match(/<([^>]+)>/)[1];
     } else {
         senderEmail = sender;
     }
 
-    if (!ALLOWED_SENDERS.includes(senderEmail)) {
-      console.warn(`⚠️ BLOQUEADO: Tentativa de postagem por remetente não autorizado: ${senderEmail}`);
-      threads[i].removeLabel(label); // Tira a etiqueta para não processar mais esse e-mail
-      continue; // Pula para o próximo e-mail da lista
+    if (ALLOWED_SENDERS.indexOf(senderEmail) === -1) {
+      console.warn("BLOQUEADO: Remetente nao autorizado: " + senderEmail);
+      threads[i].removeLabel(label);
+      continue;
     }
 
     let subject = message.getSubject();
-    let messageHTML = processHtmlWithImages(message); 
     let coverImage = extractCoverImage(message);
+    
+    // Processa HTML e REMOVE a imagem de capa do corpo se ela estiver la
+    let messageHTML = processHtmlWithImages(message, coverImage ? coverImage.nome : null); 
 
-    // --- ENVIO SEGURO PARA O NODE.JS ---
     try {
       let payload = {
         "titulo": subject,
@@ -90,7 +81,7 @@ function processEmailToSiteOnly() {
         "contentType": "application/json",
         "headers": { 
           "x-api-key": API_KEY,
-          "ngrok-skip-browser-warning": "true" // Evita página de aviso do ngrok
+          "ngrok-skip-browser-warning": "true"
         },
         "payload": JSON.stringify(payload),
         "muteHttpExceptions": true
@@ -100,40 +91,49 @@ function processEmailToSiteOnly() {
       let responseCode = response.getResponseCode();
       
       if (responseCode === 200) {
-        console.log(`✅ SUCESSO: "${subject}" publicado.`);
+        console.log("SUCESSO: Publicado.");
         threads[i].removeLabel(label); 
       } else {
-        console.error(`❌ ERRO SERVIDOR [${responseCode}]: ` + response.getContentText());
+        console.error("ERRO SERVIDOR: " + response.getContentText());
       }
 
     } catch (e) {
-      console.error("🚨 ERRO CRÍTICO DE CONEXÃO: " + e.message);
+      console.error("FALHA DE CONEXAO: " + e.message);
     }
   }
 }
 
-// --- Funções Auxiliares ---
 function extractCoverImage(message) {
   let attachments = message.getAttachments();
   for (let k = 0; k < attachments.length; k++) {
     let att = attachments[k];
-    if (att.getContentType().startsWith("image/")) {
+    if (att.getContentType().indexOf("image/") !== -1) {
       return { "nome": att.getName(), "base64": Utilities.base64Encode(att.getBytes()) };
     }
   }
   return null;
 }
 
-function processHtmlWithImages(message) {
+function processHtmlWithImages(message, skipImageName) {
   let html = message.getBody();
   let inlineImages = message.getAttachments({includeInlineImages: true});
   let cidRegex = /src="cid:([^"]+)"/g;
   let match, cidMatches = [];
   while ((match = cidRegex.exec(html)) !== null) cidMatches.push(match[1]);
-  let imgAttachments = inlineImages.filter(att => att.getContentType().startsWith("image/"));
+  let imgAttachments = inlineImages.filter(function(att) {
+     return att.getContentType().indexOf("image/") !== -1;
+  });
   if (cidMatches.length > 0 && imgAttachments.length > 0) {
     for (let j = 0; j < Math.min(cidMatches.length, imgAttachments.length); j++) {
-      let cid = cidMatches[j], blob = imgAttachments[j], b64 = Utilities.base64Encode(blob.getBytes());
+      let cid = cidMatches[j], blob = imgAttachments[j];
+      
+      // Se esta imagem e a mesma que usamos na Capa, removemos ela do corpo
+      if (skipImageName && blob.getName() === skipImageName) {
+         html = html.replace(/<img[^>]+src="cid:([^"]+)"[^>]*>/, "");
+         continue;
+      }
+
+      let b64 = Utilities.base64Encode(blob.getBytes());
       html = html.replace("cid:" + cid, "data:" + blob.getContentType() + ";base64," + b64);
     }
   }

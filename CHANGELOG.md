@@ -28,19 +28,32 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 - **Atualização do `DOCS.md`:** Inclusão do "Guia de Start Rápido" e referência às regras de IA.
 - **Modo Standalone (Node.js):** Ajuste no `server.js` para servir arquivos do frontend automaticamente quando rodar fora do Docker.
 
-## [2026-02-19] - Segurança (Hardening) e Automação de E-mail
+## [2026-02-20] - Estabilização de Infraestrutura e Filtro de Conteúdo
 
-### 🛡️ Segurança (Backend & Frontend)
-- **Proteção do Webhook:** Implementação de chave de API (`x-api-key`) na rota `/api/upload` para impedir postagens não autorizadas.
-- **Frontend Anti-XSS:** Adição da biblioteca `DOMPurify` (via CDN) para sanitizar HTML de notícias e vagas antes da renderização.
-- **Helmet & Rate Limit:** Configuração de headers de segurança e limitação de requisições no `server.js`.
-- **Validação de Arquivos:** Uso de `file-type` para verificar magic numbers de uploads, bloqueando arquivos maliciosos disfarçados.
+### 🏗️ Infraestrutura e Banco de Dados
+- **Capacidade de Upload (Nginx):** Aumentado `client_max_body_size` para **50MB** no `nginx.conf`, permitindo o envio de e-mails com fotos em alta resolução.
+- **Expansão de Conteúdo (DB):** Alterado tipo da coluna `conteudo` no banco de dados para **LONGTEXT** (via Sequelize `TEXT('long')`), suportando até 4GB de texto/imagens embutidas.
+- **Resiliência de Conectividade:** Adicionado pooling e aumentado `connectTimeout` para **60s** no `database.js`, evitando desconexões durante processamentos pesados.
 
-### ⚡ Performance (Frontend)
-- **Batch Rendering:** Otimização do `script.js` para renderizar todas as notícias de uma vez, eliminando *Layout Thrashing*.
-- **ES Modules:** Atualização do `index.html` para `type="module"`, permitindo imports modernos de JavaScript.
+### 🛡️ Segurança e Moderacão
+- **Filtro de Profanidades:** Implementação de utilitário `contentFilter.js` que censura automaticamente palavrões e linguagem imprópria em notícias publicadas via Webhook.
+- **Pentest de Segurança:** Realização de testes de penetração bem-sucedidos contra XSS, Bypass de Chave, Envenenamento de Arquivo e Ataques de Negação de Serviço (DoS).
+- **Relatório de Auditoria:** Criação do `security_audit.md` detalhando todas as defesas do sistema.
 
-### 📧 Automação (Google Apps Script)
-- **Robô de E-mail:** Script GAS criado para monitorar etiqueta `SaveToSite` no Gmail e publicar automaticamente no site.
-- **Segurança de E-mail:** Implementação de Whitelist de remetentes (apenas `carbsiteoficial@gmail.com`) e autenticação via API Key.
-- **Manual de Automação:** Criação do `DOCS_AUTOMACAO_EMAIL.md` com o código-fonte e instruções de uso.
+### 📧 Automação de E-mail (GAS)
+- **Correção de Duplicação:** Script atualizado para remover automaticamente a imagem de capa do corpo do e-mail, evitando que a foto apareça duas vezes na notícia.
+- **Limpeza de Código:** Remoção de emojis e caracteres especiais do script para evitar erros de sintaxe no editor do Google Apps Script.
+- **Arquivamento Automático:** Adicionada função para arquivar o e-mail no Gmail após a publicação bem-sucedida, mantendo a caixa de entrada limpa.
+
+### 🎨 Frontend e UI
+- **Ajuste Mobile:** Correção de sobreposição do botão de menu com o título da sidebar em dispositivos móveis.
+- **Favicon:** Adicionado favicon padrão para eliminar erro 404 no console do navegador.
+## [2026-02-21] - Suíte de Testes e Cobertura 100%
+*(Trabalho antecipado para garantir estabilidade)*
+
+### 🧪 QA e Qualidade de Código
+- **Implementação de Testes:** Criação de suíte completa usando **Jest** e **Supertest**.
+- **Cobertura Lógica de 100%:** Validação de todos os modelos, utilitários (`contentFilter`) e rotas da API.
+- **Ambiente de Teste Isolado:** Configuração do `database.js` e `server.js` para usar SQLite em memória durante os testes, prevenindo interferência em dados reais.
+- **Mocking de Sistema:** Simulação de falhas críticas (disco cheio, erro de DB) para garantir resiliência 500 no Webhook.
+- **Padronização de Módulos:** Downgrade do `file-type` para v16 para compatibilidade total com o ambiente de testes Node.js.

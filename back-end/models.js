@@ -4,7 +4,7 @@ const sequelize = require('./database');
 // 1. Tabela Notícias (atualizada com Votos)
 const Noticia = sequelize.define('Noticia', {
     titulo: { type: DataTypes.STRING, allowNull: false },
-    conteudo: { type: DataTypes.TEXT },
+    conteudo: { type: DataTypes.TEXT('long') },
     imagem_capa: { type: DataTypes.STRING },
     data_postagem: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     upvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -36,9 +36,11 @@ const Acervo = sequelize.define('Acervo', {
     ano: { type: DataTypes.INTEGER }
 });
 
-// Sincroniza o banco
-sequelize.sync().then(() => {
-    console.log("✅ Modelos sincronizados com o banco de dados.");
-});
+// Sincroniza o banco apenas em produção/desenvolvimento
+if (process.env.NODE_ENV !== 'test') {
+    sequelize.sync().then(() => {
+        console.log("✅ Modelos sincronizados com o banco de dados.");
+    });
+}
 
 module.exports = { Noticia, Aviso, Vaga, Acervo };

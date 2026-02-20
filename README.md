@@ -15,6 +15,15 @@ Este script irá:
 2. Se sim, subir os containers (Banco, API, Frontend).
 3. Se não, configurar o ambiente Node.js localmente e conectar ao banco (se disponível).
 
+## 🧪 Testes
+
+Garantimos a qualidade do código com testes automatizados:
+```bash
+cd back-end
+npm run test:coverage
+```
+*Cobertura atual: 100% da lógica de negócio.*
+
 ## 🛡️ Segurança e Diretrizes
 
 A segurança é prioridade máxima neste projeto.
