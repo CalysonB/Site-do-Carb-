@@ -245,3 +245,10 @@ botoesSidebar.forEach(btn => {
         if (window.innerWidth <= 768) sidebar.classList.remove('ativo-mobile');
     });
 });
+
+// 🌍 TORNANDO FUNÇÕES GLOBAIS (Necessário para onclick no HTML com type="module")
+// Como agora usamos "module" para importar o DOMPurify, as funções ficaram "privadas".
+// Isso expõe elas de volta para o HTML (onclick).
+window.mostrarModulo = mostrarModulo;
+window.mudarPagina = mudarPagina;
+window.votar = votar;
