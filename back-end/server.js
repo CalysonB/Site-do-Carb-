@@ -2,12 +2,42 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+// const { fileTypeFromBuffer } = require('file-type'); // Removido: Usado via import() dinâmico
 // const { DataTypes } = require('sequelize'); // Removido: Usado em models.js
 const sequelize = require('./database'); // Seu arquivo de conexão funcionando
 
 const app = express();
+
+// ==========================================
+// 0. SEGURANÇA (HARDENING)
+// ==========================================
+
+// 1. Helmet: Define cabeçalhos de segurança HTTP
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Permite carregar imagens em outros domínios se necessário
+}));
+
+// 2. Rate Limiting: Proteção contra DDoS e Brute Force
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100, // Limite de 100 requisições por IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas requisições, tente novamente mais tarde.' }
+});
+app.use('/api/', limiter); // Aplica apenas nas rotas de API
+
+// 3. CORS: Restringir origens (Ajuste conforme produção)
+// Em produção, substitua '*' pelo domínio real
+app.use(cors({
+    origin: '*', // TODO: Mudar para domínio de produção
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json({ limit: '50mb' })); // Limite alto para upload de imagens
-app.use(cors());
 
 // ==========================================
 // 1. CONFIGURAÇÃO DE ARQUIVOS ESTÁTICOS (SITE + IMAGENS)
@@ -116,18 +146,30 @@ app.get('/api/acervo', async (req, res) => {
     res.json(dados);
 });
 
-// Rota de Upload (Gmail)
+// Rota de Upload Segura (Gmail)
 app.post('/api/upload', async (req, res) => {
     try {
         const { titulo, conteudo, imagem } = req.body;
         let urlFinal = '';
 
         if (imagem && imagem.base64) {
-            const nomeLimpo = imagem.nome ? imagem.nome.replace(/[^a-zA-Z0-9.]/g, "_") : "imagem_email.jpg";
-            const nomeArquivo = `${Date.now()}-${nomeLimpo}`;
+            // Decodifica base64 para buffer
+            const buffer = Buffer.from(imagem.base64, 'base64');
+
+            // 🛡️ Validação de Tipo Real (Magic Numbers)
+            const { fileTypeFromBuffer } = await import('file-type');
+            const type = await fileTypeFromBuffer(buffer);
+            const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+            if (!type || !allowedMimeTypes.includes(type.mime)) {
+                console.warn(`Tentativa de upload de arquivo inválido: ${type ? type.mime : 'desconhecido'}`);
+                return res.status(400).json({ erro: 'Tipo de arquivo não permitido. Apenas imagens são aceitas.' });
+            }
+
+            // Gera nome seguro: Timestamp + Extensão real detectada
+            const nomeArquivo = `${Date.now()}.${type.ext}`;
             const caminhoFisico = path.join(uploadDir, nomeArquivo);
 
-            const buffer = Buffer.from(imagem.base64, 'base64');
             fs.writeFileSync(caminhoFisico, buffer);
 
             urlFinal = `/uploads/${nomeArquivo}`;
@@ -158,5 +200,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`SERVIDOR RODANDO NA PORTA ${PORT}`);
     console.log(`Acesse no PC:      http://localhost:${PORT}`);
     console.log(`Acesse no Celular: http://SEU_IP_AQUI:${PORT}`);
+    console.log(`--------------------------------------------------`);
+    console.log(`🛡️  Segurança Ativa: Helmet, RateLimit, SafeUploads`);
     console.log(`--------------------------------------------------`);
 });
