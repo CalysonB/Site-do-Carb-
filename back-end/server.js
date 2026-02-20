@@ -149,6 +149,20 @@ app.get('/api/acervo', async (req, res) => {
 // Rota de Upload Segura (Gmail)
 app.post('/api/upload', async (req, res) => {
     try {
+        // 🔒 PROTEÇÃO: Verifica a API Key (Senha)
+        const apiKeyRecebida = req.headers['x-api-key'];
+        const apiKeyCorreta = process.env.API_KEY;
+
+        if (!apiKeyCorreta) {
+            console.error("ERRO CRÍTICO: API_KEY não definida no servidor (.env ou docker-compose)");
+            return res.status(500).json({ erro: "Erro de configuração do servidor." });
+        }
+
+        if (apiKeyRecebida !== apiKeyCorreta) {
+            console.warn(`Tentativa de acesso não autorizado ao Webhook. IP: ${req.ip}`);
+            return res.status(403).json({ erro: "Acesso Proibido. Chave de API inválida." });
+        }
+
         const { titulo, conteudo, imagem } = req.body;
         let urlFinal = '';
 

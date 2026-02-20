@@ -27,6 +27,7 @@ services:
       - DB_NAME=centro_academico
       - DB_DIALECT=mariadb
       - PORT=3000
+      - API_KEY=CARB_SECURE_KEY_2026_X9Z
     volumes:
       - uploads_data:/app/public/uploads
 

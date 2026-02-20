@@ -55,6 +55,10 @@
 
     </main>
 
-    <script src="script.js"></script>
+    <!-- 
+        type="module" é OBRIGATÓRIO para usar "import DOMPurify" no script.js. 
+        Sem isso, o navegador daria erro de "SyntaxError: Cannot use import statement outside a module".
+    -->
+    <script type="module" src="script.js"></script>
 </body>
 </html>

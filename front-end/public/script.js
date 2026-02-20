@@ -2,6 +2,9 @@
 // Ao usar '/api', o navegador procura no mesmo endereço que abriu o site
 const API_URL = '/api';
 
+// 🛡️ SEGURANÇA: Importando DOMPurify via ESM (CDN)
+import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm';
+
 let paginaAtual = 1;
 
 // --- 1. NAVEGAÇÃO ENTRE MÓDULOS ---
@@ -12,20 +15,20 @@ function mostrarModulo(idModulo, btnClicado) {
 
     // Mostra o atual
     const moduloAlvo = document.getElementById(idModulo);
-    if(moduloAlvo) moduloAlvo.classList.add('ativo');
-    
-    if(btnClicado) btnClicado.classList.add('active');
+    if (moduloAlvo) moduloAlvo.classList.add('ativo');
+
+    if (btnClicado) btnClicado.classList.add('active');
 
     // Carrega dados específicos
     if (idModulo === 'modulo-1') carregarNoticias();
-    if (idModulo === 'modulo-3') carregarVagas(); 
+    if (idModulo === 'modulo-3') carregarVagas();
 }
 
 // --- 2. PAGINAÇÃO ---
 function mudarPagina(direcao) {
     const novaPagina = paginaAtual + direcao;
     if (novaPagina < 1) return;
-    
+
     paginaAtual = novaPagina;
     carregarNoticias();
 }
@@ -41,13 +44,13 @@ async function carregarNoticias() {
 
     try {
         console.log(`📡 Buscando notícias da página ${paginaAtual}...`);
-        
+
         const response = await fetch(`${API_URL}/noticias?page=${paginaAtual}`);
-        
+
         if (!response.ok) throw new Error(`Erro do Servidor: ${response.status}`);
-        
+
         const dados = await response.json();
-        
+
         // Trata os dados (se vier lista ou objeto paginado)
         let listaNoticias = [];
         let totalPaginas = 1;
@@ -60,26 +63,27 @@ async function carregarNoticias() {
         }
 
         // Atualiza a tela
-        container.innerHTML = ''; 
-        
+        container.innerHTML = '';
+
         // Atualiza botões de paginação
-        if(indicador) indicador.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
-        if(btnAnt) btnAnt.disabled = paginaAtual <= 1;
-        if(btnProx) btnProx.disabled = paginaAtual >= totalPaginas;
+        if (indicador) indicador.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
+        if (btnAnt) btnAnt.disabled = paginaAtual <= 1;
+        if (btnProx) btnProx.disabled = paginaAtual >= totalPaginas;
 
         if (listaNoticias.length === 0) {
             container.innerHTML = '<p style="text-align:center; padding:30px; color:#666;">Nenhuma notícia encontrada.</p>';
             return;
         }
 
-        // Cria o HTML de cada notícia
-        listaNoticias.forEach(noticia => {
-            container.innerHTML += criarHtmlJornal(noticia);
-        });
-        
+        // OTIMIZAÇÃO DE PERFORMANCE (Batch Rendering)
+        // Evita "Layout Thrashing" criando todo o HTML na memória antes de jogar no DOM
+        const htmlFinal = listaNoticias.map(noticia => criarHtmlJornal(noticia)).join('');
+
+        container.innerHTML = htmlFinal;
+
         // Volta pro topo da leitura
         const contentDiv = document.querySelector('.content');
-        if(contentDiv) contentDiv.scrollTop = 0;
+        if (contentDiv) contentDiv.scrollTop = 0;
 
     } catch (error) {
         console.error("❌ ERRO NO FRONTEND:", error);
@@ -96,10 +100,10 @@ async function carregarNoticias() {
 // --- 4. RENDERIZADOR DE HTML (Estilo Jornal) ---
 function criarHtmlJornal(noticia) {
     let tagImagem = '';
-    
+
     if (noticia.imagem_capa) {
         // Se a imagem for um link externo (http) ou interno (/uploads)
-        const src = noticia.imagem_capa; 
+        const src = noticia.imagem_capa;
         tagImagem = `
             <figure class="foto-jornal">
                 <img src="${src}" alt="Imagem da Notícia" onerror="this.style.display='none'">
@@ -108,14 +112,17 @@ function criarHtmlJornal(noticia) {
         `;
     }
 
-    // Processa o texto e a tag [FOTO]
-    let conteudoFinal = noticia.conteudo || "";
-    conteudoFinal = conteudoFinal.replace(/\n/g, '<br>');
+    // 🛡️ SEGURANÇA ANT-XSS: Sanitização de Inputs
+    // Remove qualquer script malicioso que possa vir do banco
+    let conteudoSeguro = DOMPurify.sanitize(noticia.conteudo || "");
 
-    if (conteudoFinal.includes('[FOTO]')) {
-        conteudoFinal = conteudoFinal.replace('[FOTO]', tagImagem);
+    // Processa quebras de linha APÓS sanitizar
+    conteudoSeguro = conteudoSeguro.replace(/\n/g, '<br>');
+
+    if (conteudoSeguro.includes('[FOTO]')) {
+        conteudoSeguro = conteudoSeguro.replace('[FOTO]', tagImagem);
     } else {
-        conteudoFinal = tagImagem + `<div class="texto-padrao">${conteudoFinal}</div>`;
+        conteudoSeguro = tagImagem + `<div class="texto-padrao">${conteudoSeguro}</div>`;
     }
 
     return `
@@ -128,7 +135,7 @@ function criarHtmlJornal(noticia) {
             </header>
             
             <div class="news-body">
-                ${conteudoFinal}
+                ${conteudoSeguro}
             </div>
 
             <footer class="news-footer">
@@ -148,7 +155,7 @@ function criarHtmlJornal(noticia) {
 
 // --- 5. SISTEMA DE VOTOS ---
 async function votar(id, tipo) {
-    if(localStorage.getItem(`votou-${id}`)) {
+    if (localStorage.getItem(`votou-${id}`)) {
         alert("Você já votou nesta notícia!");
         return;
     }
@@ -174,15 +181,15 @@ async function votar(id, tipo) {
 // --- 6. CARREGAR VAGAS (Módulo 3) ---
 async function carregarVagas() {
     const container = document.getElementById('container-vagas');
-    if(!container) return;
+    if (!container) return;
 
     try {
         container.innerHTML = '<p>Carregando vagas...</p>';
         const response = await fetch(`${API_URL}/vagas`);
         const vagas = await response.json();
-        
-        container.innerHTML = ''; 
-        
+
+        container.innerHTML = '';
+
         if (vagas.length === 0) {
             container.innerHTML = '<p>Nenhuma vaga disponível.</p>';
             return;
@@ -190,7 +197,7 @@ async function carregarVagas() {
 
         vagas.forEach(vaga => {
             const card = document.createElement('div');
-            card.className = 'tweet-card'; 
+            card.className = 'tweet-card';
             card.innerHTML = `
                 <div class="tweet-header">
                     <div class="tweet-info">
@@ -204,7 +211,7 @@ async function carregarVagas() {
             `;
             container.appendChild(card);
         });
-    } catch (e) { 
+    } catch (e) {
         container.innerHTML = '<p>Erro ao carregar vagas.</p>';
     }
 }
@@ -218,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const btnMenu = document.getElementById('menu-toggle');
 const sidebar = document.getElementById('sidebar');
 
-if(btnMenu) {
+if (btnMenu) {
     btnMenu.addEventListener('click', (e) => {
         e.stopPropagation();
         sidebar.classList.toggle('ativo-mobile');

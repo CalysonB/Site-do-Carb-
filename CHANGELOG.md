@@ -27,3 +27,20 @@ Todas as alterações notáveis neste projeto serão documentadas neste arquivo.
 - **Script `setup.sh`:** Automação do ambiente de desenvolvimento que suporta tanto Docker quanto Node.js puro.
 - **Atualização do `DOCS.md`:** Inclusão do "Guia de Start Rápido" e referência às regras de IA.
 - **Modo Standalone (Node.js):** Ajuste no `server.js` para servir arquivos do frontend automaticamente quando rodar fora do Docker.
+
+## [2026-02-19] - Segurança (Hardening) e Automação de E-mail
+
+### 🛡️ Segurança (Backend & Frontend)
+- **Proteção do Webhook:** Implementação de chave de API (`x-api-key`) na rota `/api/upload` para impedir postagens não autorizadas.
+- **Frontend Anti-XSS:** Adição da biblioteca `DOMPurify` (via CDN) para sanitizar HTML de notícias e vagas antes da renderização.
+- **Helmet & Rate Limit:** Configuração de headers de segurança e limitação de requisições no `server.js`.
+- **Validação de Arquivos:** Uso de `file-type` para verificar magic numbers de uploads, bloqueando arquivos maliciosos disfarçados.
+
+### ⚡ Performance (Frontend)
+- **Batch Rendering:** Otimização do `script.js` para renderizar todas as notícias de uma vez, eliminando *Layout Thrashing*.
+- **ES Modules:** Atualização do `index.html` para `type="module"`, permitindo imports modernos de JavaScript.
+
+### 📧 Automação (Google Apps Script)
+- **Robô de E-mail:** Script GAS criado para monitorar etiqueta `SaveToSite` no Gmail e publicar automaticamente no site.
+- **Segurança de E-mail:** Implementação de Whitelist de remetentes (apenas `carbsiteoficial@gmail.com`) e autenticação via API Key.
+- **Manual de Automação:** Criação do `DOCS_AUTOMACAO_EMAIL.md` com o código-fonte e instruções de uso.
