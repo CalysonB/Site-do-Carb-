@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # 1. Frontend (Nginx - Servidor Web)
+  front-end:
+    build: ./front-end
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - back-end
+    volumes:
+      - uploads_data:/usr/share/nginx/html/uploads
+
+  # 2. Backend (API Node.js)
+  back-end:
+    build: ./back-end
+    restart: always
+    expose:
+      - "3000" # Apenas exposto para o Nginx, não para o host (segurança)
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=CARB26
+      - DB_NAME=centro_academico
+      - DB_DIALECT=mariadb
+      - PORT=3000
+    volumes:
+      - uploads_data:/app/public/uploads
+
+  # 3. Banco de Dados
+  db:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: CARB26
+      MYSQL_DATABASE: centro_academico
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  # 4. Interface Adminer
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  mariadb_data:
+  uploads_data:

@@ -1,0 +1,369 @@
+/* ==========================================================
+   1. IMPORTAÇÃO DE FONTES (Estilo New York Times)
+   ========================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@700&family=Segoe+UI&display=swap');
+
+/* ==========================================================
+   2. RESET E LAYOUT GERAL (A Estrutura)
+   ========================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+Excelente observação. Em UI/UX, a regra de ouro para leitura em dispositivos móveis é manter o texto base em 16px (1rem) e uma altura de linha confortável, mas não exagerada. No Desktop, o problema de "sair da tela" ao diminuir a janela geralmente ocorre por falta de instruções de "quebra" de palavras longas ou imagens rígidas.
+
+Vamos corrigir isso com 3 ajustes cirúrgicos no seu style.css.
+
+1. Prevenir que o texto/imagem "vaze" (Global)
+Adicione isso logo no início do seu CSS, pode ser abaixo do reset * { ... }. Isso força imagens e textos longos a respeitarem o limite da caixa, não importa o tamanho da janela.
+
+CSS
+/* --- SEGURANÇA CONTRA OVERFLOW (Tudo respeita a largura) --- */
+img, video, iframe {
+    max-width: 100%; /* A imagem nunca será maior que a tela */
+    height: auto;    /* Mantém a proporção */
+}
+
+/* Garante que palavras muito longas não quebrem o layout */
+p, h1, h2, h3, span, div {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+body { 
+    display: flex;       /* Coloca Sidebar e Content lado a lado */
+    height: 100vh;       /* Ocupa a altura total da tela */
+    background-color: #f4f4f9; 
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;    /* Impede rolagem dupla (apenas o content rola) */
+}
+
+/* ==========================================================
+   3. BARRA LATERAL (SIDEBAR)
+   ========================================================== */
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+    flex-shrink: 0;      /* Impede que a barra encolha */
+    z-index: 1000;       /* Fica acima do conteúdo no mobile */
+    transition: left 0.3s ease-in-out; /* Animação suave no mobile */
+}
+
+.sidebar h2 { 
+    text-align: center; 
+    margin-bottom: 30px; 
+    font-family: 'Playfair Display', serif;
+}
+
+.menu-btn {
+    background: none;
+    border: none;
+    color: #ecf0f1;
+    padding: 15px 20px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+    border-left: 5px solid transparent;
+    width: 100%;
+}
+
+.menu-btn:hover, .menu-btn.active {
+    background-color: #34495e;
+    border-left-color: #e74c3c;
+}
+
+/* ==========================================================
+   4. ÁREA DE CONTEÚDO PRINCIPAL
+   ========================================================== */
+.content { 
+    flex: 1;             /* Ocupa todo o espaço restante */
+    padding: 40px; 
+    overflow-y: auto;    /* A barra de rolagem fica AQUI */
+    scroll-behavior: smooth;
+    
+    /* Configuração Flex para empurrar a paginação para baixo */
+    display: flex;       
+    flex-direction: column; 
+}
+
+/* Lógica de SPA (Módulos) */
+.modulo { 
+    display: none;       /* Esconde por padrão */
+    flex: 1;             /* Ocupa altura disponível */
+    flex-direction: column;
+    animation: fadeIn 0.5s; 
+}
+.modulo.ativo { display: flex; } /* Mostra quando ativo */
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ==========================================================
+   5. ESTILO JORNALÍSTICO (NEWS PAPER)
+   ========================================================== */
+.feed-container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.news-paper-card {
+    background-color: #fff;
+    padding: 50px;
+    margin-bottom: 40px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+/* Ajuste intermediário (Tablets e Janelas menores do PC) */
+@media (max-width: 850px) {
+    .feed-container {
+        padding: 0 10px; /* Margem lateral de segurança */
+    }
+    .news-paper-card {
+        padding: 30px; /* Reduz o padding interno para caber mais texto */
+    }
+}
+/* Cabeçalho da Notícia (Data e Título) */
+.news-paper-card header {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centraliza o bloco do título na página */
+    width: 100%;
+}
+
+.news-date {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.news-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    line-height: 1.1;
+    color: #1a1a1a;
+    margin-top: 0;
+    margin-bottom: 30px;
+    font-weight: 700;
+    
+    /* Truque: Texto alinhado à esquerda, mas bloco centralizado */
+    text-align: left;       
+    width: fit-content;     
+    max-width: 100%;        
+    
+    word-wrap: break-word;      
+    overflow-wrap: break-word;
+}
+
+/* Corpo do Texto */
+.news-body {
+    font-family: 'Merriweather', serif;
+    font-size: 1.15rem;
+    line-height: 1.9;
+    color: #2c3e50;
+    text-align: justify;
+}
+
+/* Letra Capitular (A primeira letra grande) */
+.news-body::first-letter {
+    font-size: 3.8rem;
+    float: left;
+    margin-right: 12px;
+    margin-top: -8px;
+    line-height: 0.8;
+    font-family: 'Playfair Display', serif;
+    font-weight: bold;
+    color: #1a1a1a;
+}
+
+/* Imagem dentro do texto */
+.foto-jornal {
+    margin: 35px 0;
+    text-align: center;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #eee;
+}
+
+.foto-jornal img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.foto-jornal figcaption {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Divisor elegante */
+.news-divider {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, transparent, rgba(0,0,0,0.2), transparent);
+    margin: 20px auto 60px auto;
+    width: 80%;
+}
+
+/* ==========================================================
+   6. SISTEMA DE VOTOS
+   ========================================================== */
+.news-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.vote-system { display: flex; gap: 10px; }
+
+.btn-vote {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 30px;
+    padding: 8px 18px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #555;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-vote:hover { transform: translateY(-2px); background-color: #f8f8f8; }
+.btn-vote.up:hover { color: #27ae60; border-color: #27ae60; }
+.btn-vote.down:hover { color: #c0392b; border-color: #c0392b; }
+
+/* ==========================================================
+   7. PAGINAÇÃO E MÓDULOS EXTRAS (Vagas)
+   ========================================================== */
+
+/* Paginação fixa no final */
+.pagination-controls {
+    margin-top: auto; /* Empurra para o rodapé do módulo */
+    padding: 30px 10px 10px 10px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 800px;
+    align-self: center;
+}
+
+.pag-btn {
+    padding: 10px 25px;
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+.pag-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+/* Estilo para Vagas (Cards simples) */
+.news-grid { display: flex; flex-direction: column; gap: 15px; }
+
+.tweet-card {
+    background: white;
+    border: 1px solid #e1e8ed;
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+}
+.tweet-info h3 { font-size: 1.1rem; color: #2c3e50; }
+
+/* ==========================================================
+   8. RESPONSIVIDADE E MENU MOBILE
+   ========================================================== */
+
+/* Botão Menu (Invisível no PC) */
+.menu-trigger {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 2000;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* ==========================================================
+   RESPONSIVIDADE E UI/UX MOBILE
+   ========================================================== */
+@media (max-width: 768px) {
+    
+    /* 1. Botão Menu aparece */
+    .menu-trigger { display: block; }
+
+    /* 2. Sidebar Retrátil */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -260px;
+        height: 100%;
+        width: 250px;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.5);
+    }
+    .sidebar.ativo-mobile { left: 0; }
+
+    /* 3. Ajuste do Conteúdo */
+    .content {
+        padding: 60px 15px 20px 15px; /* Margens laterais padrão (15px/16px) */
+        width: 100%;
+    }
+
+    /* 4. AJUSTE UI/UX DO JORNAL (Texto Mobile) */
+    .news-paper-card { 
+        padding: 20px;       /* Espaço interno menor */
+        margin-bottom: 20px;
+        border-radius: 8px;  /* Bordas levemente arredondadas ficam melhor no mobile */
+    }
+
+    .news-headline { 
+        font-size: 1.6rem;   /* Título menor (aprox 26px) */
+        line-height: 1.2;
+        margin-bottom: 20px;
+        text-align: left;    /* No mobile, alinhado à esquerda é padrão de leitura */
+    }
+
+    .news-body {
+        font-size: 1rem;     /* PADRÃO UI: 16px para texto corrido */
+        line-height: 1.6;    /* Espaçamento confortável para leitura em tela pequena */
+        text-align: left;    /* Remove o 'justify' que cria buracos no texto em mobile */
+    }
+
+    .news-body::first-letter { 
+        font-size: 2.8rem;   /* Capitular ajustada proporcionalmente */
+        margin-right: 8px;
+        margin-top: -2px;
+    }
+    
+    /* Data menor */
+    .news-date { font-size: 0.75rem; }
+
+    /* Foto ocupa a largura total no mobile para impacto */
+    .foto-jornal {
+        margin: 20px -20px; /* Truque: A foto ignora o padding e encosta na borda */
+        width: calc(100% + 40px);
+        border: none;
+        background: none;
+    }
+}
