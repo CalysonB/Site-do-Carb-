@@ -323,6 +323,11 @@ body {
         box-shadow: 2px 0 15px rgba(0,0,0,0.5);
     }
     .sidebar.ativo-mobile { left: 0; }
+    
+    /* ABRE ESPAÇO PARA O BOTÃO DE MENU NÃO FICAR EM CIMA DO TÍTULO */
+    .sidebar h2 {
+        margin-top: 60px; /* Empurra o "CARB Jornal" para baixo do botão */
+    }
 
     /* 3. Ajuste do Conteúdo */
     .content {
