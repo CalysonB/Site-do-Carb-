@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal CARB - Institucional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <button id="menu-toggle" class="menu-trigger">☰</button>
+
+    <nav class="sidebar" id="sidebar">
+        <h2>CARB Jornal</h2>
+        <button class="menu-btn active" onclick="mostrarModulo('modulo-1', this)">Notícias</button>
+        <button class="menu-btn" onclick="mostrarModulo('modulo-2', this)">Agente de Matrícula</button>
+        <button class="menu-btn" onclick="mostrarModulo('modulo-3', this)">Vagas de Emprego</button>
+        <button class="menu-btn" onclick="mostrarModulo('modulo-4', this)">Acervo Carb</button>
+    </nav>
+
+    <main class="content">
+        
+        <section id="modulo-1" class="modulo ativo">
+            <h1 style="text-align: center; margin-bottom: 20px; color: #333;">Feed de Notícias</h1>
+            
+            <div id="container-noticias" class="feed-container">
+                <p style="text-align: center">Carregando feed...</p>
+            </div>
+
+            <div class="pagination-controls">
+                <button id="btn-ant" class="pag-btn" onclick="mudarPagina(-1)">← Anterior</button>
+                <span id="indicador-pagina" style="align-self: center; color: #555;">Página 1</span>
+                <button id="btn-prox" class="pag-btn" onclick="mudarPagina(1)">Próxima →</button>
+            </div>
+        </section>
+
+        <section id="modulo-2" class="modulo">
+            <h1>Agente de Matrícula</h1>
+            <p>Conteúdo do módulo de matrícula...</p>
+        </section>
+
+        <section id="modulo-3" class="modulo">
+            <h1>Vagas de Emprego</h1>
+            <hr style="margin: 20px 0;"><br>
+            <div id="container-vagas" class="news-grid">
+                <p>Carregando vagas...</p>
+            </div>
+        </section>
+
+        <section id="modulo-4" class="modulo">
+            <h1>Acervo CARB</h1>
+            <p>Documentos históricos...</p>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
