@@ -15,15 +15,25 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 app.use('/uploads', express.static(uploadDir));
 
 // Rotas da API
+// No server.js (Backend)
+const { Op } = require('sequelize');
+
 app.get('/api/noticias', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
+    const busca = req.query.q || ''; // Captura a busca
     const limit = 20;
+
     try {
         const { count, rows } = await Noticia.findAndCountAll({
-            limit: limit, offset: (page - 1) * limit, order: [['data_postagem', 'DESC']]
+            where: {
+                titulo: { [Op.like]: `%${busca}%` } // Pesquisa no título
+            },
+            limit: limit,
+            offset: (page - 1) * limit,
+            order: [['data_postagem', 'DESC']]
         });
-        res.json({ total_paginas: Math.ceil(count / limit), pagina_atual: page, noticias: rows });
-    } catch (error) { res.status(500).json({ erro: "Erro ao buscar notícias" }); }
+        res.json({ total_paginas: Math.ceil(count / limit), noticias: rows });
+    } catch (error) { res.status(500).json({ erro: "Erro ao buscar" }); }
 });
 
 app.post('/api/noticias/:id/voto', async (req, res) => {

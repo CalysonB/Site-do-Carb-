@@ -44,3 +44,8 @@ sequelize.sync().then(() => {
 });
 
 module.exports = { Noticia, Aviso, Vaga, Acervo, sequelize };
+
+const Sugestao = sequelize.define('Sugestao', {
+    mensagem: { type: DataTypes.TEXT, allowNull: false },
+    lida: { type: DataTypes.BOOLEAN, defaultValue: false }
+});

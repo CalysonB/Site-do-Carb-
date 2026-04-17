@@ -336,3 +336,69 @@ body {
         background: none;
     }
 }
+
+/* ==========================================================
+   9. LAYOUT TIPO X/TWITTER (3 Colunas)
+   ========================================================== */
+.twitter-layout {
+    display: flex;
+    justify-content: center;
+    max-width: 1250px;
+    margin: 0 auto;
+    height: 100vh;
+}
+
+/* O Feed do Meio */
+.timeline-center {
+    width: 600px;
+    max-width: 100%;
+    border-left: 1px solid #eff3f4;
+    border-right: 1px solid #eff3f4;
+    overflow-y: auto;
+}
+
+/* O Painel da Direita */
+.right-panel {
+    width: 350px;
+    padding: 20px 30px;
+    display: none; /* Esconde no mobile */
+}
+
+@media (min-width: 1024px) {
+    .right-panel { display: block; }
+}
+
+/* Componentes do Painel Direito */
+.search-input {
+    width: 100%;
+    padding: 15px 25px;
+    border-radius: 30px;
+    border: 1px solid transparent;
+    background-color: #eff3f4;
+    font-size: 1rem;
+    outline: none;
+    transition: 0.2s;
+}
+.search-input:focus {
+    background-color: white;
+    border-color: #1da1f2;
+}
+
+.whatsapp-card {
+    background-color: #f7f9f9;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.btn-whatsapp {
+    display: block;
+    text-align: center;
+    padding: 12px;
+    background-color: #25D366;
+    color: white;
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+.btn-whatsapp:hover { background-color: #128C7E; }
