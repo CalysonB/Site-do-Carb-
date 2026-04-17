@@ -1,104 +1,118 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet'); // Protege contra vulnerabilidades de HTTP
+const rateLimit = require('express-rate-limit'); // Evita ataques de força bruta e spam de votos
 const path = require('path');
 const fs = require('fs');
-const sequelize = require('./database');
-const { Noticia, Aviso, Vaga, Acervo } = require('./models');
-
+const crypto = require('crypto'); // Para gerar nomes de ficheiros seguros
+require('dotenv').config(); // Carrega variáveis de ambiente
+const jwt = require('jsonwebtoken'); // Adicione isto no topo com os outros requires
+const { Sugestao } = require('./models'); // Garanta que a Sugestao é importada
 const app = express();
-app.use(express.json({ limit: '50mb' }));
-app.use(cors()); // Essencial para o React conseguir aceder à API
 
-// Pasta de uploads (para as imagens das notícias)
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-app.use('/uploads', express.static(uploadDir));
+// 1. Camada de Segurança HTTP
+app.use(helmet()); 
+app.use(express.json({ limit: '10mb' }));
 
-// Rotas da API
-// No server.js (Backend)
-const { Op } = require('sequelize');
+// 2. Restrição de CORS (Compliance de Origem)
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Apenas seu frontend pode acessar
+    optionsSuccessStatus: 200
+}));
 
-app.get('/api/noticias', async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const busca = req.query.q || ''; // Captura a busca
-    const limit = 20;
-
-    try {
-        const { count, rows } = await Noticia.findAndCountAll({
-            where: {
-                titulo: { [Op.like]: `%${busca}%` } // Pesquisa no título
-            },
-            limit: limit,
-            offset: (page - 1) * limit,
-            order: [['data_postagem', 'DESC']]
-        });
-        res.json({ total_paginas: Math.ceil(count / limit), noticias: rows });
-    } catch (error) { res.status(500).json({ erro: "Erro ao buscar" }); }
+// 3. Limitador de Requisições (Prevenção contra Spam de Votos/Sugestões)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100 // Limite cada IP a 100 requisições por janela
 });
-
-app.post('/api/noticias/:id/voto', async (req, res) => {
-    try {
-        const noticia = await Noticia.findByPk(req.params.id);
-        if (!noticia) return res.status(404).json({ erro: 'Não encontrada' });
-        if (req.body.tipo === 'up') noticia.upvotes += 1;
-        else if (req.body.tipo === 'down') noticia.downvotes += 1;
-        await noticia.save();
-        res.json({ up: noticia.upvotes, down: noticia.downvotes });
-    } catch (error) { res.status(500).json({ erro: 'Erro ao votar' }); }
-});
-
-app.get('/api/vagas', async (req, res) => {
-    const dados = await Vaga.findAll({ where: { ativo: true } });
-    res.json(dados);
-});
-
-app.get('/api/acervo', async (req, res) => {
-    const dados = await Acervo.findAll({ order: [['ano', 'DESC']] });
-    res.json(dados);
-});
-
-app.listen(3000, '0.0.0.0', () => console.log('Servidor Backend a correr na porta 3000'));
 
 // ==========================================
-// ROTA WEBHOOK: RECEBE NOTÍCIAS DO GMAIL
+// MIDDLEWARE DE SEGURANÇA (Porteiro do Admin)
 // ==========================================
+const verificarAdmin = (req, res, next) => {
+    const token = req.headers['authorization'];
+    if (!token) return res.status(403).json({ erro: 'Acesso negado: Token não fornecido.' });
+    
+    // O formato do token chega como "Bearer eyJhbGci..."
+    jwt.verify(token.split(' ')[1], process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(401).json({ erro: 'Acesso negado: Token inválido ou expirado.' });
+        next(); // Deixa o admin passar
+    });
+};
+
+// ==========================================
+// ROTAS DE ADMINISTRAÇÃO
+// ==========================================
+// 1. Login do Admin
+app.post('/api/admin/login', (req, res) => {
+    const { usuario, senha } = req.body;
+    if (usuario === process.env.ADMIN_USER && senha === process.env.ADMIN_PASS) {
+        // Gera um token válido por 2 horas
+        const token = jwt.sign({ admin: true }, process.env.JWT_SECRET, { expiresIn: '2h' });
+        res.json({ token });
+    } else {
+        res.status(401).json({ erro: 'Credenciais inválidas' });
+    }
+});
+
+// 2. Deletar Notícia (Protegida)
+app.delete('/api/noticias/:id', verificarAdmin, async (req, res) => {
+    try {
+        await Noticia.destroy({ where: { id: req.params.id } });
+        res.json({ mensagem: 'Notícia removida com sucesso.' });
+    } catch (e) { res.status(500).json({ erro: e.message }); }
+});
+
+// ==========================================
+// ROTAS DA OUVIDORIA
+// ==========================================
+// 1. Aluno envia sugestão (Pública)
+app.post('/api/ouvidoria', async (req, res) => {
+    try {
+        if (!req.body.mensagem) return res.status(400).json({ erro: 'A mensagem está vazia.' });
+        await Sugestao.create({ mensagem: req.body.mensagem });
+        res.json({ status: 'sucesso' });
+    } catch (e) { res.status(500).json({ erro: e.message }); }
+});
+
+// 2. Admin lê sugestões (Protegida)
+app.get('/api/ouvidoria', verificarAdmin, async (req, res) => {
+    try {
+        const sugestoes = await Sugestao.findAll({ order: [['createdAt', 'DESC']] });
+        res.json(sugestoes);
+    } catch (e) { res.status(500).json({ erro: e.message }); }
+});
+
+app.use('/api/', limiter);
+
+// 4. Webhook Seguro para o Gmail
 app.post('/api/upload', async (req, res) => {
-    // 1. Verificação de Segurança (API Key)
+    // API KEY deve estar num ficheiro .env para não vazar no GitHub
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== "CARB_SECURE_KEY_2026_X9Z") {
-        console.warn("Tentativa de acesso bloqueada (API Key inválida).");
-        return res.status(403).json({ erro: "Acesso negado." });
+    if (apiKey !== process.env.API_KEY_CARB) {
+        return res.status(403).json({ erro: "Unauthorized" });
     }
 
     try {
-        const { titulo, conteudo, imagem } = req.body; 
+        const { titulo, conteudo, imagem } = req.body;
         let urlFinal = '';
 
-        // 2. Processa a imagem de capa (se houver)
         if (imagem && imagem.base64) {
-            const nomeLimpo = imagem.nome ? imagem.nome.replace(/[^a-zA-Z0-9.]/g, "_") : "imagem_email.jpg";
-            const nomeArquivo = `${Date.now()}-${nomeLimpo}`;
+            // SEGURANÇA: Nunca confie no nome original do ficheiro
+            const extensao = imagem.nome.split('.').pop().toLowerCase();
+            if (!['jpg', 'jpeg', 'png'].includes(extensao)) throw new Error("Tipo Proibido");
             
-            // Grava o ficheiro na pasta /public/uploads
-            const caminhoFisico = path.join(__dirname, 'public', 'uploads', nomeArquivo);
-            const buffer = Buffer.from(imagem.base64, 'base64');
-            fs.writeFileSync(caminhoFisico, buffer);
-
-            urlFinal = `/uploads/${nomeArquivo}`;
+            // Gera um nome aleatório (UUID) para evitar ataques de Path Traversal
+            const nomeSeguro = `${crypto.randomUUID()}.${extensao}`;
+            const caminho = path.join(__dirname, 'public', 'uploads', nomeSeguro);
+            
+            fs.writeFileSync(caminho, Buffer.from(imagem.base64, 'base64'));
+            urlFinal = `/uploads/${nomeSeguro}`;
         }
 
-        // 3. Salva a notícia na Base de Dados
-        const novaNoticia = await Noticia.create({ 
-            titulo: titulo || "Notícia via E-mail", 
-            conteudo: conteudo || "", 
-            imagem_capa: urlFinal 
-        });
-
-        console.log(`✅ Nova notícia via e-mail publicada: ${titulo}`);
-        res.status(200).json({ status: 'sucesso', id: novaNoticia.id, url: urlFinal });
-
+        // ... lógica de salvamento na DB (Noticia.create) ...
+        res.status(200).json({ status: 'ok' });
     } catch (e) {
-        console.error("❌ Erro ao processar webhook do Gmail:", e);
-        res.status(500).json({ erro: e.message });
+        res.status(500).json({ erro: "Internal Security Error" });
     }
 });

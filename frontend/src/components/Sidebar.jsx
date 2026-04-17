@@ -19,17 +19,6 @@ export default function Sidebar({ moduloAtivo, setModuloAtivo }) {
         onClick={() => setModuloAtivo('acervo')}
       >
         Acervo Carb
-      </button>
-      <button>
-      // Exemplo de botão no Frontend
-      <a 
-        href="https://wa.me/5571999999999?text=Olá! Preciso de ajuda com a matrícula no CARB." 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="btn-whatsapp"
-      >
-        💬 Falar com Agente de Matrícula
-      </a>
       </button>      
     </nav>
   );
