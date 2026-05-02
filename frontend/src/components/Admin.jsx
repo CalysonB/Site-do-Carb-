@@ -9,43 +9,41 @@ export default function Admin() {
   const [noticias, setNoticias] = useState([]);
   const [erro, setErro] = useState('');
 
-  // 1. Movemos o "sair" para o topo para que possa ser usado por outras funções
   const sair = () => {
     setToken(null);
     localStorage.removeItem('carb_admin_token');
   };
 
   useEffect(() => {
-    // 2. Colocamos a função de carregar dados dentro do useEffect (Boa prática React)
     const carregarDados = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const [resSugestoes, resNoticias] = await Promise.all([
-          axios.get('http://localhost:3000/api/ouvidoria', config),
-          axios.get('http://localhost:3000/api/noticias?page=1')
+          axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ouvidoria`, config),
+          axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/noticias?page=1`)
         ]);
-        setSugestoes(resSugestoes.data);
-        setNoticias(resNoticias.data.noticias || []);
+        setSugestoes(resSugestoes.data || []);
+        setNoticias(resNoticias.data?.noticias || []);
       } catch (e) {
-        console.error("Erro ao carregar dados:", e); // Usamos a variável 'e'
-        if (e.response?.status === 401 || e.response?.status === 403) {
+        console.error("Erro ao carregar dados:", e);
+        if (e?.response?.status === 401 || e?.response?.status === 403) {
           sair(); 
         }
       }
     };
 
     if (token) carregarDados();
-  }, [token]); // <-- O VS Code vai adorar isto agora
+  }, [token]);
 
   const fazerLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:3000/api/admin/login', { usuario, senha });
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/admin/login`, { usuario, senha });
       setToken(res.data.token);
       localStorage.setItem('carb_admin_token', res.data.token);
       setErro('');
     } catch (e) {
-      console.error("Erro de login:", e); // Usamos a variável 'e'
+      console.error("Erro de login:", e);
       setErro('Acesso negado. Credenciais inválidas.');
     }
   };
@@ -53,19 +51,16 @@ export default function Admin() {
   const apagarNoticia = async (id) => {
     if (!window.confirm('Tem a certeza que deseja apagar esta notícia permanentemente?')) return;
     try {
-      await axios.delete(`http://localhost:3000/api/noticias/${id}`, { 
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/noticias/${id}`, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       setNoticias(noticias.filter(n => n.id !== id));
     } catch (e) {
-      console.error("Erro ao apagar:", e); // Usamos a variável 'e'
+      console.error("Erro ao apagar:", e);
       alert('Erro ao apagar notícia.');
     }
   };
 
-  // ==========================================
-  // ECRÃ 1: LOGIN
-  // ==========================================
   if (!token) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: 'var(--bg-color)', color: 'white' }}>
@@ -89,9 +84,6 @@ export default function Admin() {
     );
   }
 
-  // ==========================================
-  // ECRÃ 2: DASHBOARD (Logado)
-  // ==========================================
   return (
     <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto', color: 'var(--text-main)', height: '100vh', overflowY: 'auto' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px', marginBottom: '30px' }}>

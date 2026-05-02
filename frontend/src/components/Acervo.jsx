@@ -18,7 +18,7 @@ export default function Acervo() {
             {acervo.map(item => (
               <li key={item.id} style={{ marginBottom: '10px' }}>
                 <strong>{item.ano} - {item.categoria}:</strong> {item.titulo} 
-                {item.arquivo_url && <a href={`http://localhost:3000${item.arquivo_url}`} target="_blank" rel="noreferrer" style={{ marginLeft: '10px', color: '#e74c3c' }}>[Baixar PDF]</a>}
+                {item.arquivo_url && <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${item.arquivo_url}`} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px', color: '#e74c3c' }}>[Baixar PDF]</a>}
               </li>
             ))}
           </ul>

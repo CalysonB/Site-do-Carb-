@@ -20,6 +20,12 @@ export default function Sidebar({ moduloAtivo, setModuloAtivo }) {
       >
         Acervo Carb
       </button>      
+      <button 
+        className={`menu-btn ${moduloAtivo === 'ouvidoria' ? 'active' : ''}`}
+        onClick={() => setModuloAtivo('ouvidoria')}
+      >
+        Ouvidoria
+      </button>      
     </nav>
   );
 }

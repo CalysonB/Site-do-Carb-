@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.test
+.env.local
+
+# Build
+dist/
+build/
+.vite/
+
+# Tests
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

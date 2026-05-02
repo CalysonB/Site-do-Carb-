@@ -10,7 +10,7 @@ export default function Ouvidoria() {
     if (!mensagem.trim()) return;
     
     try {
-      await axios.post('http://localhost:3000/api/ouvidoria', { mensagem });
+      await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/ouvidoria`, { mensagem });
       setStatus('✅ A sua mensagem foi enviada anonimamente para a direção!');
       setMensagem('');
       setTimeout(() => setStatus(''), 5000);
@@ -33,6 +33,7 @@ export default function Ouvidoria() {
           placeholder="O que está a acontecer?"
           value={mensagem}
           onChange={(e) => setMensagem(e.target.value)}
+          maxLength={2000}
           style={{
             width: '100%', padding: '15px', borderRadius: '12px', 
             backgroundColor: 'var(--bg-color)', color: 'white',
